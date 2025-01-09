@@ -1,5 +1,6 @@
 from flask import Flask, request
-
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
 
 import base64
 import gzip
@@ -12,15 +13,24 @@ import hashlib
 import hmac
 
 
+# Key Vault configuration
+KEY_VAULT_URI = "https://prismacloudsaselogkv1.vault.azure.net/"
+WORKSPACE_ID_SECRET_NAME = "LogAnalyticsWorkspaceId"
+SHARED_KEY_SECRET_NAME = "LogAnalyticsWorkspaceKey"
+
+# Initialize Key Vault client
+credential = DefaultAzureCredential()
+secret_client = SecretClient(vault_url=KEY_VAULT_URI, credential=credential)
+
+# Fetch secrets from Key Vault
+try:
+    WORKSPACE_ID = secret_client.get_secret(WORKSPACE_ID_SECRET_NAME).value
+    SHARED_KEY = secret_client.get_secret(SHARED_KEY_SECRET_NAME).value
+except Exception as e:
+    logging.error(f"Failed to fetch secrets from Key Vault: {str(e)}")
+    raise
+
 app = Flask("prisma_Cloud_sase_log_forwarding")
-
-
-WORKSPACE_ID = os.environ.get('WORKSPACE_ID')
-SHARED_KEY = os.environ.get('SHARED_KEY')
-
-
-if (WORKSPACE_ID is None or SHARED_KEY is None):
-    raise Exception("Please add azure sentinel customer_id and shared_key to azure key vault/application settings of web app") 
 
 
 BASIC_AUTH = base64.b64encode("{}:{}".format(WORKSPACE_ID, SHARED_KEY).encode()).decode("utf-8")
