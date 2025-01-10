@@ -12,7 +12,7 @@ import hashlib
 import hmac
 
 
-app = Flask(__name__)
+app = Flask("prisma_Cloud_sase_log_forwarding")
 
 
 WORKSPACE_ID = os.environ.get('WORKSPACE_ID')
@@ -90,11 +90,26 @@ def post_data_auth(headers, body):
 
 @app.route('/', methods=['POST'])
 def func():
-    auth_headers = request.headers.get("authorization").split(",")
-    body = request.get_data()
-    basic_auth_header = ''
-    shared_key_header = ''
     try:
+        # Validate required headers
+        if not request.headers.get("authorization"):
+            logging.error("Missing authorization header")
+            return FAILURE_RESPONSE, 401, APPLICATION_JSON
+
+        auth_headers = request.headers.get("authorization").split(",")
+        body = request.get_data()
+        
+        if not body:
+            logging.error("Empty request body")
+            return FAILURE_RESPONSE, 400, APPLICATION_JSON
+
+        if not request.headers.get(LOG_TYPE):
+            logging.error("Missing Log-Type header")
+            return FAILURE_RESPONSE, 400, APPLICATION_JSON
+
+        basic_auth_header = ''
+        shared_key_header = ''
+        
         for auth in auth_headers:
             if "Basic" in auth:
                 basic_auth_header = auth.strip()
@@ -143,7 +158,7 @@ def func():
             logging.error("Exception: {}{}{}".format(headers, err, decompressed))
             return FAILURE_RESPONSE, 500, APPLICATION_JSON 
     except Exception as e:
-        logging.error(e)
+        logging.error(f"Unexpected error in main handler: {str(e)}")
         return FAILURE_RESPONSE, 500, APPLICATION_JSON 
        
     return SUCCESS_RESPONSE, 200, APPLICATION_JSON 
@@ -154,5 +169,22 @@ def health():
     return SUCCESS_RESPONSE, 200, APPLICATION_JSON 
 
 
+# Add error handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    logging.error(f"404 error: {error}")
+    return FAILURE_RESPONSE, 404, APPLICATION_JSON
+
+@app.errorhandler(500)
+def internal_error(error):
+    logging.error(f"500 error: {error}")
+    return FAILURE_RESPONSE, 500, APPLICATION_JSON
+
+
 if __name__ == '__main__':
-   app.run()
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    app.run()
