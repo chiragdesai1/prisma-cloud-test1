@@ -25,6 +25,8 @@ client = SecretClient(vault_url=KEYVAULT_URI, credential=credential)
 WORKSPACE_ID = client.get_secret("LogAnalyticsWorkspaceId").value
 SHARED_KEY = os.environ.get('SHARED_KEY')
 
+# Fetch SHARED_KEY from KeyVault
+SHARED_KEY = client.get_secret("LogAnalyticsWorkspaceKey").value
 
 if (WORKSPACE_ID is None or SHARED_KEY is None):
     raise Exception("Please add azure sentinel customer_id and shared_key to azure key vault/application settings of web app") 
