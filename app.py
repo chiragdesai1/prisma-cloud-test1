@@ -10,12 +10,19 @@ import requests
 import datetime
 import hashlib
 import hmac
+from azure.keyvault.secrets import SecretClient
+from azure.identity import DefaultAzureCredential
 
 
-app = Flask(__name__)
+app = Flask("strata_log_forwarding_to_Sentinel")
 
+KEYVAULT_URI = "https://prismacloudsaselogkv1.vault.azure.net/"
+# Setup KeyVault client
+credential = DefaultAzureCredential()
+client = SecretClient(vault_url=KEYVAULT_URI, credential=credential)
 
-WORKSPACE_ID = os.environ.get('WORKSPACE_ID')
+# Fetch WORKSPACE_ID from KeyVault
+WORKSPACE_ID = client.get_secret("LogAnalyticsWorkspaceId").value
 SHARED_KEY = os.environ.get('SHARED_KEY')
 
 
