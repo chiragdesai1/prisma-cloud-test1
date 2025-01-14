@@ -70,13 +70,17 @@ def build_signature(customer_id, shared_key, date, content_length, method, conte
 def post(headers, body, isAuth):
     auth_string = ' auth ' if isAuth else ' '
     try:
+        logging.info(f"Attempting to connect to Log Analytics Workspace: {WORKSPACE_ID}")
+        logging.info(f"Full URI being called: {URI}")
         response = POOL.post(URI, data=body, headers=headers)
-        logging.info(f"Successfully connected to {URI}")
+        logging.info(f"Successfully connected to Log Analytics Workspace")
     except requests.exceptions.SSLError as ssl_err:
-        logging.error(f"SSL Error when connecting to {URI}: {ssl_err}")
+        logging.error(f"SSL Error when connecting to Log Analytics: {ssl_err}")
+        logging.error(f"Workspace ID: {WORKSPACE_ID}")
+        logging.error(f"Full URI: {URI}")
         raise
     except Exception as e:
-        logging.error(f"Other error when connecting to {URI}: {e}")
+        logging.error(f"Other error when connecting to Log Analytics: {e}")
         raise
     if (response.status_code >= 200 and response.status_code <= 299):
         logging.debug('accepted {}'.format(auth_string))
