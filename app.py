@@ -69,7 +69,15 @@ def build_signature(customer_id, shared_key, date, content_length, method, conte
 
 def post(headers, body, isAuth):
     auth_string = ' auth ' if isAuth else ' '
-    response = POOL.post(URI, data=body, headers=headers)
+    try:
+        response = POOL.post(URI, data=body, headers=headers)
+        logging.info(f"Successfully connected to {URI}")
+    except requests.exceptions.SSLError as ssl_err:
+        logging.error(f"SSL Error when connecting to {URI}: {ssl_err}")
+        raise
+    except Exception as e:
+        logging.error(f"Other error when connecting to {URI}: {e}")
+        raise
     if (response.status_code >= 200 and response.status_code <= 299):
         logging.debug('accepted {}'.format(auth_string))
     else:
